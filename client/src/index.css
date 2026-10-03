@@ -1,0 +1,47 @@
+:root {
+  --bg: #f4f6f8;
+  --fg: #1d2330;
+  --muted: #6b7280;
+  --card: #fff;
+  --accent: #19a463;
+  --error: #c0392b;
+  font-family: system-ui, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b;
+    --fg: #e6e8eb;
+    --muted: #9aa1ab;
+    --card: #1c2028;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 760px; margin: 0 auto; padding: 48px 16px; }
+h1 { text-align: center; }
+
+form { display: flex; gap: 8px; }
+input { flex: 1; min-width: 0; padding: 14px; font-size: 16px; border: 2px solid var(--accent); border-radius: 6px; background: var(--card); color: var(--fg); }
+button { padding: 0 24px; font-size: 16px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; cursor: pointer; }
+button:disabled { opacity: 0.6; cursor: wait; }
+
+.error { color: var(--error); }
+.card { display: flex; gap: 16px; margin-top: 24px; padding: 16px; background: var(--card); border-radius: 8px; }
+.card img { width: 240px; height: fit-content; border-radius: 6px; }
+.card h2 { margin: 0 0 4px; font-size: 18px; }
+.meta, .hint { color: var(--muted); font-size: 14px; }
+.formats { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.formats button { padding: 8px 12px; font-size: 14px; }
+.progress p { margin: 0 0 6px; font-size: 14px; }
+.progress progress { width: 100%; accent-color: var(--accent); }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+@media (max-width: 600px) {
+  .card { flex-direction: column; }
+  .card img { width: 100%; }
+}

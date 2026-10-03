@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      # Localhost only: the host's cloudflared reaches it, the internet can't.
+      - HOST=127.0.0.1
+      - PORT=3010
