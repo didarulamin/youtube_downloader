@@ -70,7 +70,9 @@ app.get('/api/prepare', async (req, res) => {
   const proc = youtubedl.exec(url, {
     newline: true,
     ...BASE_FLAGS,
-    output: path.join(dir, '%(title)s.%(ext)s'),
+    // Cap title at 150 bytes: Facebook titles include the whole caption, and Linux
+    // filenames max out at 255 bytes (yt-dlp adds .fNNN.m4a.part while downloading).
+    output: path.join(dir, '%(title).150B.%(ext)s'),
     ...(type === 'mp3'
       ? { extractAudio: true, audioFormat: 'mp3' }
       : {
