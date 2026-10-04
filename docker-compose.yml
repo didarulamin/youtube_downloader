@@ -7,3 +7,7 @@ services:
       # Localhost only: the host's cloudflared reaches it, the internet can't.
       - HOST=127.0.0.1
       - PORT=3010
+      # Optional login cookies (Instagram, private Facebook, YouTube "not a bot" checks):
+      # - COOKIES_FILE=/data/cookies.txt
+    # volumes:
+    #   - ./cookies.txt:/data/cookies.txt

@@ -12,8 +12,8 @@ const fmtSize = (b) => (b ? ` · ${(b / 1048576).toFixed(1)} MB` : '')
 
 function prepareHref(url, f) {
   const q = new URLSearchParams({ url })
-  if (f.type === 'mp3') q.set('type', 'mp3')
-  else q.set('height', f.height)
+  if (f.type === 'video') q.set('height', f.height)
+  else q.set('type', f.type)
   return `/api/prepare?${q}`
 }
 
@@ -81,14 +81,15 @@ export default function App() {
 
   return (
     <main>
-      <h1>YouTube Downloader</h1>
+      <h1>Video Downloader</h1>
+      <p className="hint center">YouTube · Facebook · Instagram · TikTok</p>
       <form onSubmit={onSubmit}>
-        <label htmlFor="url" className="sr-only">YouTube URL</label>
+        <label htmlFor="url" className="sr-only">Video URL</label>
         <input
           id="url"
           type="url"
           required
-          placeholder="Paste YouTube link here"
+          placeholder="Paste a YouTube, Facebook, Instagram or TikTok link"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
@@ -99,10 +100,10 @@ export default function App() {
 
       {info && (
         <section className="card">
-          <img src={info.thumbnail} alt="" />
+          <img src={info.thumbnail} alt="" referrerPolicy="no-referrer" />
           <div>
             <h2>{info.title}</h2>
-            <p className="meta">{info.uploader} · {fmtTime(info.duration)}</p>
+            <p className="meta">{[info.uploader, fmtTime(info.duration)].filter(Boolean).join(' · ')}</p>
             <ul className="formats">
               {info.formats.map((f) => (
                 <li key={f.label}>

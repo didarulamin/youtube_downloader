@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { createInterface } from 'node:readline';
-import { isYoutubeUrl, pickFormats, parseProgress } from './lib.js';
+import { isSupportedUrl, pickFormats, parseProgress } from './lib.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,10 +16,13 @@ const errMsg = (e) => (e.stderr || e.message || 'Unknown error').trim().split('\
 
 // yt-dlp needs a JS runtime for YouTube; reuse the Node running this server.
 const BASE_FLAGS = { noPlaylist: true, noWarnings: true, jsRuntimes: `node:${process.execPath}` };
+// Optional Netscape cookies.txt from a logged-in browser (Instagram, private FB, YouTube bot checks).
+// yt-dlp also writes refreshed cookies back to it, so it must be writable.
+if (process.env.COOKIES_FILE) BASE_FLAGS.cookies = process.env.COOKIES_FILE;
 
 app.get('/api/info', async (req, res) => {
   const { url } = req.query;
-  if (!isYoutubeUrl(url)) return res.status(400).json({ error: 'Invalid YouTube URL' });
+  if (!isSupportedUrl(url)) return res.status(400).json({ error: 'Unsupported URL (YouTube, Facebook, Instagram, TikTok)' });
   try {
     const info = await youtubedl(url, { ...BASE_FLAGS, dumpSingleJson: true });
     res.json({
@@ -49,8 +52,8 @@ for (const d of await readdir(tmpdir())) {
 app.get('/api/prepare', async (req, res) => {
   const { url, type } = req.query;
   const height = Number(req.query.height);
-  if (!isYoutubeUrl(url)) return res.status(400).json({ error: 'Invalid YouTube URL' });
-  if (type !== 'mp3' && !(Number.isInteger(height) && height > 0)) {
+  if (!isSupportedUrl(url)) return res.status(400).json({ error: 'Unsupported URL (YouTube, Facebook, Instagram, TikTok)' });
+  if (type !== 'mp3' && type !== 'best' && !(Number.isInteger(height) && height > 0)) {
     return res.status(400).json({ error: 'Invalid height' });
   }
 
@@ -59,7 +62,7 @@ app.get('/api/prepare', async (req, res) => {
   // Proxies (Cloudflare: 100s) drop idle responses; keep the stream alive.
   const ping = setInterval(() => res.write(': ping\n\n'), 15000);
   const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
-  const tag = `[${type === 'mp3' ? 'mp3' : `${height}p`} ${url}]`;
+  const tag = `[${type === 'mp3' || type === 'best' ? type : `${height}p`} ${url}]`;
 
   // yt-dlp can't merge/convert to stdout, so download to a temp dir then send.
   const dir = await mkdtemp(path.join(tmpdir(), 'ytdl-'));
@@ -70,7 +73,11 @@ app.get('/api/prepare', async (req, res) => {
     output: path.join(dir, '%(title)s.%(ext)s'),
     ...(type === 'mp3'
       ? { extractAudio: true, audioFormat: 'mp3' }
-      : { format: 'bv*+ba/b', formatSort: `res:${height},vcodec:h264,acodec:m4a`, mergeOutputFormat: 'mp4' }),
+      : {
+          format: 'bv*+ba/b',
+          formatSort: type === 'best' ? 'vcodec:h264,acodec:m4a' : `res:${height},vcodec:h264,acodec:m4a`,
+          mergeOutputFormat: 'mp4',
+        }),
   });
 
   let done = false;

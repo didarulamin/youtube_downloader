@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isYoutubeUrl, pickFormats, parseProgress } from './lib.js';
+import { isSupportedUrl, pickFormats, parseProgress } from './lib.js';
 
 test('parseProgress', () => {
   assert.deepEqual(parseProgress('[download]  45.3% of    8.00MiB at    2.10MiB/s ETA 00:03'), {
@@ -15,14 +15,25 @@ test('parseProgress', () => {
   assert.equal(parseProgress('[youtube] dQw4w9WgXcQ: Downloading webpage'), null);
 });
 
-test('isYoutubeUrl', () => {
-  assert.ok(isYoutubeUrl('https://youtu.be/dQw4w9WgXcQ'));
-  assert.ok(isYoutubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'));
-  assert.ok(isYoutubeUrl('https://music.youtube.com/watch?v=x'));
-  assert.ok(!isYoutubeUrl('https://evil.com/youtube.com'));
-  assert.ok(!isYoutubeUrl('https://youtube.com.evil.com/'));
-  assert.ok(!isYoutubeUrl('--exec=rm'));
-  assert.ok(!isYoutubeUrl('file:///etc/passwd'));
+test('isSupportedUrl', () => {
+  for (const ok of [
+    'https://youtu.be/dQw4w9WgXcQ',
+    'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    'https://music.youtube.com/watch?v=x',
+    'https://www.facebook.com/watch/?v=1',
+    'https://fb.watch/abc/',
+    'https://www.instagram.com/reel/abc/',
+    'https://www.tiktok.com/@u/video/1',
+    'https://vm.tiktok.com/abc/',
+  ]) assert.ok(isSupportedUrl(ok), ok);
+  for (const bad of [
+    'https://evil.com/youtube.com',
+    'https://youtube.com.evil.com/',
+    'https://notyoutube.com/',
+    'https://faketiktok.com/',
+    '--exec=rm',
+    'file:///etc/passwd',
+  ]) assert.ok(!isSupportedUrl(bad), bad);
 });
 
 test('pickFormats', () => {
@@ -38,4 +49,12 @@ test('pickFormats', () => {
   assert.deepEqual(formats.map((f) => f.label), ['1080p', '360p', 'MP3']);
   assert.equal(formats[0].size, 99);
   assert.equal(formats[1].size, 20);
+
+  // Portrait video labelled by its shorter side.
+  const tiktok = pickFormats({ formats: [{ width: 720, height: 1280, vcodec: 'h265' }] });
+  assert.equal(tiktok[0].label, '720p');
+  assert.equal(tiktok[0].height, 720);
+
+  // No resolutions reported -> "Best quality" fallback.
+  assert.deepEqual(pickFormats({ formats: [{ format_id: 'sd' }] }).map((f) => f.type), ['best', 'mp3']);
 });
